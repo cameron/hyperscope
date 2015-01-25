@@ -1,0 +1,17 @@
+{
+  "name": "hyperscope",
+  "main": "hyperscope.js",
+  "version": "0.0.0",
+  "authors": [
+    "Cameron Boehmer <cameron.boehmer@gmail.com>"
+  ],
+  "description": "Upgrades for angular's $scope API including $watch helpers like $if and $watch(...).once().",
+  "keywords": [
+    "angular",
+    "ng",
+    "scope",
+    "frp"
+  ],
+  "license": "MIT",
+  "homepage": "http://cameron.github.io/hyperscope"
+}

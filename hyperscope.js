@@ -1,12 +1,11 @@
 
 // Hyperscope
-// Upgrading $scope.$watch
+// Upgrading $scope.$watch, making new friends
 
 angular.module('hyperscope', [])
 
 // service for extending $scope objects
-.factory('Hyperscope', function($parse, $rootScope){
-
+.service('hyperscope', ['$parse', function($parse){
   var vanillaAdditions = {
 
     // Apply only if angular is not already doing so.
@@ -15,6 +14,7 @@ angular.module('hyperscope', [])
         fn() :
         this.$apply(fn);
     },
+
     // Like $watch, but assigns the value of `expression` to `this[`alias`]`
     $alias: function(expr, alias, objectEquality){
       return this.$watch(expr, function(val, old, scope){
@@ -24,7 +24,6 @@ angular.module('hyperscope', [])
     $expr: function(expr, objectEquality){
       return this.$watch(expr, function(){}, objectEquality);
     }
-
   };
 
   var upgradeable = {
@@ -35,18 +34,19 @@ angular.module('hyperscope', [])
         if(!is) return true;
         return fn(is, was, scope);
       }, objectEquality);
-    },
+    }
   };
 
-  /* Upgrade watchHelpers
-   *    * - accept an angular expression as a callback
-   *    * - $watch(...).once() to deregister after one invocation
-   *    * - $watch(...).times(n) to deregister after N invocations
-   *    *
-   *    * MIND-BLOW: $watch supports this by default, but it's undocumented
-   *    * and a comment in the source suggests it may disappear. Leaving it
-   *    * here for now, but worth noting that it's a native feature.
-   *    */
+  /* Upgrade watchHelpers (currently, $watch and $if)
+   *
+   *  - accept an angular expression as a listener
+   *  - $watch(...).once() to deregister after one invocation
+   *  - $watch(...).times(n) to deregister after N invocations
+   *
+   *  MIND-BLOW: $watch supports this by default, but it's undocumented
+   *  and a comment in the source suggests it may disappear. Leaving it
+   *  here for now, but worth noting that it's a native feature.
+   */
   var upgradeWatchHelper = function(obj, funcName){
     var unwrappedWatcher = obj[funcName];
 
@@ -69,7 +69,11 @@ angular.module('hyperscope', [])
 
       // xform callback expression to function
       var fn = typeof _fnOrExpr == 'string'
-             ? function(newV, oldV, scope){ return $parse(_fnOrExpr)(exprCtx);}
+             ? function(newV, oldV, scope){
+               exprCtx.$oldVal = oldV;
+               exprCtx.$newVal = newV;
+               return $parse(_fnOrExpr)(exprCtx);
+             }
              : _fnOrExpr;
 
       // Wrap the callback so we can capture and use its return value
@@ -128,11 +132,12 @@ angular.module('hyperscope', [])
     upgradeWatchHelper(upgradeable, key);
   });
 
+  // the final set of additions to the $scope object
   var extensions = _.extend({}, _.extend(upgradeable, vanillaAdditions));
 
-  return function(scope){
-    _.extend(scope, extensions);
-    upgradeWatchHelper(scope, '$watch');
-    return scope;
+  return function(scopeOrProto){
+    _.extend(scopeOrProto, extensions);
+    upgradeWatchHelper(scopeOrProto, '$watch');
+    return scopeOrProto;
   };
-});
+}]);

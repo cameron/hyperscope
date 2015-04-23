@@ -10,9 +10,11 @@ angular.module('hyperscope', [])
 
     // Apply only if angular is not already doing so.
     $applyWithCare: function(fn){
-      _.contains(['$apply','$digest'], this.$root.$$phase) ?
-        fn() :
+      if(_.contains(['$apply','$digest'], this.$root.$$phase)){
+        typeof fn == 'string' ? $parse(fn)(this) : fn();
+      } else {
         this.$apply(fn);
+      }
     },
 
     // Like $watch, but assigns the value of `expression` to `this[`alias`]`
